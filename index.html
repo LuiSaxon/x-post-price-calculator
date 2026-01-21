@@ -833,7 +833,7 @@
           <div class="card-header">
             <div id="tierBadge" class="tier-badge tier-diamond">
               <span class="tier-icon">💎</span>
-              <span id="tierName">Diamond Tier</span>
+              <span>Diamond Tier</span>
             </div>
             
             <div class="price-label">Estimated Price</div>
@@ -1090,7 +1090,7 @@
           backgroundColor: '#1a1a2e',
           scale: 2,
           useCORS: true,
-          allowTaint: true,
+          allowTaint: false,
           logging: false,
           width: resultCard.offsetWidth,
           height: resultCard.offsetHeight,
@@ -1099,25 +1099,55 @@
           onclone: (clonedDoc) => {
             const clonedCard = clonedDoc.getElementById('resultCard');
             if (clonedCard) {
+              // Apply font family
               clonedCard.style.fontFamily = "'JetBrains Mono', 'Courier New', monospace";
               
+              // Force tier badge to be visible with all content
               const clonedTierBadge = clonedDoc.getElementById('tierBadge');
               if (clonedTierBadge) {
                 clonedTierBadge.style.display = 'inline-flex';
+                clonedTierBadge.style.alignItems = 'center';
+                clonedTierBadge.style.justifyContent = 'center';
+                clonedTierBadge.style.gap = '0.5rem';
                 clonedTierBadge.style.visibility = 'visible';
                 clonedTierBadge.style.opacity = '1';
+                
+                // Make sure all children are visible
+                const tierChildren = clonedTierBadge.querySelectorAll('*');
+                tierChildren.forEach(child => {
+                  child.style.visibility = 'visible';
+                  child.style.opacity = '1';
+                  child.style.display = 'inline';
+                });
               }
               
+              // Force avatar to render properly
               const clonedAvatar = clonedDoc.getElementById('profileAvatar');
               if (clonedAvatar && profileAvatar.src) {
+                // Copy the current src (whether it's unavatar or fallback SVG)
                 clonedAvatar.src = profileAvatar.src;
+                clonedAvatar.style.display = 'block';
+                clonedAvatar.style.visibility = 'visible';
+                clonedAvatar.style.opacity = '1';
                 clonedAvatar.crossOrigin = 'anonymous';
+                
+                // If avatar failed to load, use the fallback
+                if (!profileAvatar.complete || profileAvatar.naturalHeight === 0) {
+                  const username = result.username || 'U';
+                  clonedAvatar.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect fill='%2300d4ff' width='64' height='64'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='white' font-family='monospace'%3E${username[0].toUpperCase()}%3C/text%3E%3C/svg%3E`;
+                }
               }
               
+              // Force all text elements to be visible
               const allElements = clonedCard.querySelectorAll('*');
               allElements.forEach(el => {
                 el.style.visibility = 'visible';
                 el.style.opacity = '1';
+                
+                // Ensure text is not hidden
+                if (el.textContent && el.textContent.trim()) {
+                  el.style.color = window.getComputedStyle(document.getElementById(el.id) || el).color;
+                }
               });
             }
           }
