@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>X Post Price Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     * {
@@ -1041,8 +1043,11 @@
 
       const tier = getTier(maxPrice);
 
+      // Set avatar with CORS support for html2canvas
+      profileAvatar.crossOrigin = "anonymous";
       profileAvatar.src = `https://unavatar.io/twitter/${username}`;
       profileAvatar.onerror = function() {
+        // Use inline SVG as fallback (no CORS issues)
         this.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect fill='%2300d4ff' width='64' height='64'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='white' font-family='monospace'%3E${username[0].toUpperCase()}%3C/text%3E%3C/svg%3E`;
       };
 
@@ -1072,9 +1077,49 @@
     // Copy card to clipboard
     copyCardBtn.addEventListener('click', async () => {
       try {
+        // Store original button state
+        const originalHTML = copyCardBtn.innerHTML;
+        
+        // Show loading state
+        copyCardBtn.innerHTML = `
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span>Processing...</span>
+        `;
+        copyCardBtn.disabled = true;
+        
+        // Wait for avatar to fully load if it hasn't yet
+        if (profileAvatar.complete && profileAvatar.naturalHeight !== 0) {
+          // Image is already loaded
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } else {
+          // Wait for image to load
+          await new Promise((resolve) => {
+            profileAvatar.onload = () => resolve();
+            // Timeout after 3 seconds
+            setTimeout(resolve, 3000);
+          });
+        }
+        
+        // Capture the card
         const canvas = await html2canvas(resultCard, {
           backgroundColor: '#0a0a0f',
-          scale: 2
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+          width: resultCard.offsetWidth,
+          height: resultCard.offsetHeight,
+          onclone: (clonedDoc) => {
+            // Ensure proper styling in cloned document
+            const clonedCard = clonedDoc.getElementById('resultCard');
+            if (clonedCard) {
+              clonedCard.style.fontFamily = "'JetBrains Mono', 'Courier New', monospace";
+              clonedCard.style.width = resultCard.offsetWidth + 'px';
+              clonedCard.style.height = resultCard.offsetHeight + 'px';
+            }
+          }
         });
         
         // Convert canvas to blob
@@ -1088,7 +1133,6 @@
             ]);
             
             // Show success feedback
-            const originalHTML = copyCardBtn.innerHTML;
             copyCardBtn.innerHTML = `
               <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -1098,17 +1142,17 @@
             
             setTimeout(() => {
               copyCardBtn.innerHTML = originalHTML;
+              copyCardBtn.disabled = false;
             }, 2000);
           } catch (err) {
             // Fallback: download if clipboard API fails
-            console.log('Clipboard API failed, downloading instead:', err);
+            console.log('Clipboard API not supported, downloading instead:', err);
             const link = document.createElement('a');
             link.download = `x-post-price-${result.username}.png`;
             link.href = canvas.toDataURL();
             link.click();
             
             // Show download feedback
-            const originalHTML = copyCardBtn.innerHTML;
             copyCardBtn.innerHTML = `
               <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
@@ -1118,12 +1162,18 @@
             
             setTimeout(() => {
               copyCardBtn.innerHTML = originalHTML;
+              copyCardBtn.disabled = false;
             }, 2000);
           }
         }, 'image/png');
       } catch (error) {
         console.error('Card copy failed:', error);
-        alert('Unable to copy card. Please try using a modern browser (Chrome, Firefox, Safari).');
+        
+        // Reset button
+        copyCardBtn.innerHTML = originalHTML;
+        copyCardBtn.disabled = false;
+        
+        alert('Unable to copy card. This may be due to:\n\n• Browser security restrictions\n• Ad blocker blocking the avatar image\n• Private browsing mode\n\nTry:\n1. Disabling ad blockers\n2. Using regular browsing mode\n3. Using Chrome or Firefox');
       }
     });
 
