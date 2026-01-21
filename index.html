@@ -832,8 +832,7 @@
 
           <div class="card-header">
             <div id="tierBadge" class="tier-badge tier-diamond">
-              <span class="tier-icon">💎</span>
-              <span>Diamond Tier</span>
+              <span>DIAMOND TIER</span>
             </div>
             
             <div class="price-label">Estimated Price</div>
@@ -940,11 +939,11 @@
 
     // Tier configuration
     const tiers = [
-      { name: 'Diamond', icon: '💎', minPrice: 4000, class: 'tier-diamond', nextTier: null },
-      { name: 'Obsidian', icon: '⚫', minPrice: 1500, class: 'tier-obsidian', nextTier: 'Diamond ($4,000)' },
-      { name: 'Pearl', icon: '🤍', minPrice: 700, class: 'tier-pearl', nextTier: 'Obsidian ($1,500)' },
-      { name: 'Amethyst', icon: '🟣', minPrice: 300, class: 'tier-amethyst', nextTier: 'Pearl ($700)' },
-      { name: 'Emerald', icon: '🟢', minPrice: 0, class: 'tier-emerald', nextTier: 'Amethyst ($300)' }
+      { name: 'Diamond', icon: '', minPrice: 4000, class: 'tier-diamond', nextTier: null },
+      { name: 'Obsidian', icon: '', minPrice: 1500, class: 'tier-obsidian', nextTier: 'Diamond ($4,000)' },
+      { name: 'Pearl', icon: '', minPrice: 700, class: 'tier-pearl', nextTier: 'Obsidian ($1,500)' },
+      { name: 'Amethyst', icon: '', minPrice: 300, class: 'tier-amethyst', nextTier: 'Pearl ($700)' },
+      { name: 'Emerald', icon: '', minPrice: 0, class: 'tier-emerald', nextTier: 'Amethyst ($300)' }
     ];
 
     function getTier(price) {
@@ -979,7 +978,7 @@
             <img src="https://unavatar.io/twitter/${entry.username}" alt="${entry.username}" class="leaderboard-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22%3E%3Crect fill=%22%2300d4ff%22 width=%2240%22 height=%2240%22/%3E%3Ctext x=%2220%22 y=%2226%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22monospace%22%3E${entry.username[0].toUpperCase()}%3C/text%3E%3C/svg%3E'">
             <div class="leaderboard-info">
               <div class="leaderboard-username">@${entry.username}</div>
-              <div class="leaderboard-tier ${tier.class}">${tier.icon} ${tier.name}</div>
+              <div class="leaderboard-tier ${tier.class}">${tier.name}</div>
             </div>
             <div class="leaderboard-price">$${entry.minPrice.toLocaleString()}-$${entry.maxPrice.toLocaleString()}</div>
           </div>
@@ -1045,7 +1044,7 @@
       resultSorsa.textContent = result.sorsa.toLocaleString();
 
       tierBadge.className = `tier-badge ${tier.class}`;
-      tierBadge.innerHTML = `<span class="tier-icon">${tier.icon}</span><span>${tier.name} Tier</span>`;
+      tierBadge.innerHTML = `<span>${tier.name.toUpperCase()} TIER</span>`;
 
       updateGrowthTip(tier);
       saveToLeaderboard(result);
@@ -1099,55 +1098,37 @@
           onclone: (clonedDoc) => {
             const clonedCard = clonedDoc.getElementById('resultCard');
             if (clonedCard) {
-              // Apply font family
+              // Apply font family to entire card
               clonedCard.style.fontFamily = "'JetBrains Mono', 'Courier New', monospace";
               
-              // Force tier badge to be visible with all content
+              // Handle tier badge
               const clonedTierBadge = clonedDoc.getElementById('tierBadge');
               if (clonedTierBadge) {
+                // Copy exact content from original
+                const originalTierBadge = document.getElementById('tierBadge');
+                clonedTierBadge.innerHTML = originalTierBadge.innerHTML;
+                clonedTierBadge.className = originalTierBadge.className;
                 clonedTierBadge.style.display = 'inline-flex';
-                clonedTierBadge.style.alignItems = 'center';
-                clonedTierBadge.style.justifyContent = 'center';
-                clonedTierBadge.style.gap = '0.5rem';
                 clonedTierBadge.style.visibility = 'visible';
                 clonedTierBadge.style.opacity = '1';
-                
-                // Make sure all children are visible
-                const tierChildren = clonedTierBadge.querySelectorAll('*');
-                tierChildren.forEach(child => {
-                  child.style.visibility = 'visible';
-                  child.style.opacity = '1';
-                  child.style.display = 'inline';
-                });
               }
               
-              // Force avatar to render properly
+              // Handle avatar
               const clonedAvatar = clonedDoc.getElementById('profileAvatar');
-              if (clonedAvatar && profileAvatar.src) {
-                // Copy the current src (whether it's unavatar or fallback SVG)
-                clonedAvatar.src = profileAvatar.src;
+              const originalAvatar = document.getElementById('profileAvatar');
+              if (clonedAvatar && originalAvatar) {
+                clonedAvatar.src = originalAvatar.src;
                 clonedAvatar.style.display = 'block';
                 clonedAvatar.style.visibility = 'visible';
                 clonedAvatar.style.opacity = '1';
                 clonedAvatar.crossOrigin = 'anonymous';
-                
-                // If avatar failed to load, use the fallback
-                if (!profileAvatar.complete || profileAvatar.naturalHeight === 0) {
-                  const username = result.username || 'U';
-                  clonedAvatar.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect fill='%2300d4ff' width='64' height='64'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='white' font-family='monospace'%3E${username[0].toUpperCase()}%3C/text%3E%3C/svg%3E`;
-                }
               }
               
-              // Force all text elements to be visible
+              // Make all elements visible
               const allElements = clonedCard.querySelectorAll('*');
               allElements.forEach(el => {
                 el.style.visibility = 'visible';
                 el.style.opacity = '1';
-                
-                // Ensure text is not hidden
-                if (el.textContent && el.textContent.trim()) {
-                  el.style.color = window.getComputedStyle(document.getElementById(el.id) || el).color;
-                }
               });
             }
           }
