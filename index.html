@@ -985,7 +985,8 @@
       }
     });
 
-    calculateBtn.addEventListener('click', () => {
+    // Function to trigger calculation
+    const triggerCalculation = () => {
       const username = usernameInput.value.replace('@', '');
       const ts = parseFloat(twitterScoreInput.value);
       const sorsaVal = parseFloat(sorsaInput.value);
@@ -1017,13 +1018,52 @@
 
       const tier = getTier(maxPrice);
 
-      // Set avatar with CORS support for html2canvas
+      // Set avatar with CORS support and multiple fallback options
       profileAvatar.crossOrigin = "anonymous";
-      profileAvatar.src = `https://unavatar.io/twitter/${username}`;
-      profileAvatar.onerror = function() {
-        // Use inline SVG as fallback (no CORS issues)
-        this.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect fill='%2300d4ff' width='64' height='64'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='white' font-family='monospace'%3E${username[0].toUpperCase()}%3C/text%3E%3C/svg%3E`;
+      
+      // Try loading from unavatar first
+      const tryLoadAvatar = async () => {
+        const avatarServices = [
+          `https://unavatar.io/twitter/${username}`,
+          `https://unavatar.io/x/${username}`,
+          `https://ui-avatars.com/api/?name=${username}&size=128&background=00d4ff&color=fff&bold=true`
+        ];
+        
+        let loaded = false;
+        
+        for (const serviceUrl of avatarServices) {
+          if (loaded) break;
+          
+          try {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            
+            await new Promise((resolve, reject) => {
+              img.onload = () => {
+                profileAvatar.src = serviceUrl;
+                loaded = true;
+                resolve();
+              };
+              img.onerror = reject;
+              img.src = serviceUrl;
+              
+              // Timeout after 3 seconds
+              setTimeout(reject, 3000);
+            });
+            
+            if (loaded) break;
+          } catch (err) {
+            console.log(`Failed to load avatar from ${serviceUrl}`);
+          }
+        }
+        
+        // If all services fail, use SVG fallback
+        if (!loaded) {
+          profileAvatar.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect fill='%2300d4ff' width='64' height='64'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='white' font-family='monospace'%3E${username[0].toUpperCase()}%3C/text%3E%3C/svg%3E`;
+        }
       };
+      
+      tryLoadAvatar();
 
       profileName.textContent = username;
       resultUsername.textContent = `@${username}`;
@@ -1046,6 +1086,28 @@
       setTimeout(() => {
         resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
+    };
+
+    // Click handler
+    calculateBtn.addEventListener('click', triggerCalculation);
+
+    // Enter key handlers for all input fields
+    usernameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        triggerCalculation();
+      }
+    });
+
+    twitterScoreInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        triggerCalculation();
+      }
+    });
+
+    sorsaInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        triggerCalculation();
+      }
     });
 
     // Copy card to clipboard - most reliable method
