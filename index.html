@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X Post Price Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+      color: #ffffff;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .grain-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .glow-orb {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.15;
+      z-index: 0;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .glow-orb-1 {
+      background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+      top: -200px;
+      left: -200px;
+    }
+
+    .glow-orb-2 {
+      background: linear-gradient(135deg, #f72585, #4361ee);
+      bottom: -200px;
+      right: -200px;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(50px, -50px) scale(1.1); }
+      66% { transform: translate(-50px, 50px) scale(0.9); }
+    }
+
+    .content-wrapper {
+      position: relative;
+      z-index: 2;
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: slideDown 0.6s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-icon {
+      color: #00d4ff;
+      animation: sparkle 2s ease-in-out infinite;
+    }
+
+    @keyframes sparkle {
+      0%, 100% { opacity: 1; transform: rotate(0deg); }
+      50% { opacity: 0.7; transform: rotate(180deg); }
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: -0.05em;
+      background: linear-gradient(135deg, #00d4ff, #f72585);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 40px rgba(0, 212, 255, 0.3);
+    }
+
+    .tagline {
+      color: #8b92a8;
+      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .calculator-section,
+    .result-section {
+      background: rgba(26, 26, 46, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .fade-in {
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .input-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #00d4ff;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1rem;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #00d4ff;
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+
+    .input-field::placeholder {
+      color: #4a5568;
+    }
+
+    .metrics-links {
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .metrics-links.visible {
+      display: block;
+    }
+
+    .helper-text {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #00d4ff;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .links-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .metric-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+    }
+
+    .metric-link:hover {
+      background: rgba(0, 212, 255, 0.1);
+      border-color: #00d4ff;
+      transform: translateX(2px);
+    }
+
+    .link-arrow {
+      color: #00d4ff;
+      font-weight: bold;
+    }
+
+    .calculate-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #00d4ff, #f72585);
+      border: none;
+      border-radius: 12px;
+      padding: 1.25rem;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+    }
+
+    .calculate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0, 212, 255, 0.4);
+    }
+
+    .calculate-btn:active {
+      transform: translateY(0);
+    }
+
+    .disclaimer {
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .built-by {
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
+    .built-by a {
+      color: #00d4ff;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    .built-by a:hover {
+      color: #f72585;
+      text-decoration: underline;
+    }
+
+    .result-card {
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(247, 37, 133, 0.1));
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #00d4ff, #f72585, #00d4ff);
+      background-size: 200% 100%;
+      animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Profile Header with Avatar */
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .profile-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid rgba(0, 212, 255, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+    }
+
+    .profile-info {
+      flex: 1;
+    }
+
+    .profile-username {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.25rem;
+    }
+
+    .profile-handle {
+      font-size: 0.875rem;
+      color: #8b92a8;
+    }
+
+    /* Tier Badge Styles */
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1.5rem;
+      border: 2px solid;
+      box-shadow: 0 4px 20px;
+    }
+
+    .tier-diamond {
+      background: linear-gradient(135deg, #0B1C26, #102F3D);
+      border-color: #5EE7FF;
+      color: #5EE7FF;
+      box-shadow: 0 4px 20px rgba(94, 231, 255, 0.3);
+    }
+
+    .tier-obsidian {
+      background: linear-gradient(135deg, #050505, #121212);
+      border-color: #8B5CF6;
+      color: #E6E6E6;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .tier-pearl {
+      background: linear-gradient(135deg, #1A1A1A, #2A2A2A);
+      border-color: #E6E6E6;
+      color: #E6E6E6;
+      box-shadow: 0 4px 20px rgba(230, 230, 230, 0.2);
+    }
+
+    .tier-amethyst {
+      background: linear-gradient(135deg, #160B2E, #2C1363);
+      border-color: #9B5CFF;
+      color: #9B5CFF;
+      box-shadow: 0 4px 20px rgba(155, 92, 255, 0.3);
+    }
+
+    .tier-emerald {
+      background: linear-gradient(135deg, #0B1F16, #123D2A);
+      border-color: #1DB954;
+      color: #1DB954;
+      box-shadow: 0 4px 20px rgba(29, 185, 84, 0.3);
+    }
+
+    .tier-icon {
+      font-size: 1.25rem;
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .price-label {
+      font-size: 0.875rem;
+      color: #8b92a8;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .price-per-post {
+      font-size: 3rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #00d4ff, #f72585);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .price-range-text {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1.5rem;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .metric-item {
+      text-align: center;
+    }
+
+    .metric-label {
+      display: block;
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #00d4ff;
+    }
+
+    .metric-divider {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    }
+
+    .growth-tip {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: #8b92a8;
+      text-align: center;
+    }
+
+    .card-footer {
+      text-align: center;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .powered-by {
+      font-size: 0.75rem;
+      color: #4a5568;
+    }
+
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .action-btn {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 0.875rem;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(0, 212, 255, 0.1);
+      border-color: #00d4ff;
+      transform: translateY(-2px);
+    }
+
+    .recalculate-btn {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 1rem;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .recalculate-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Leaderboard Styles */
+    .leaderboard-section {
+      margin-top: 2rem;
+      background: rgba(26, 26, 46, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      animation: fadeIn 0.8s ease-out 0.2s both;
+    }
+
+    .leaderboard-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .leaderboard-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #00d4ff, #f72585);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .leaderboard-subtitle {
+      font-size: 0.875rem;
+      color: #8b92a8;
+    }
+
+    .leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 500px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .leaderboard-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .leaderboard-list::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 3px;
+    }
+
+    .leaderboard-list::-webkit-scrollbar-thumb {
+      background: rgba(0, 212, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .leaderboard-item:hover {
+      background: rgba(0, 212, 255, 0.05);
+      border-color: rgba(0, 212, 255, 0.3);
+      transform: translateX(4px);
+    }
+
+    .leaderboard-item.current-user {
+      background: rgba(0, 212, 255, 0.1);
+      border-color: #00d4ff;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    }
+
+    .leaderboard-rank {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #00d4ff;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .leaderboard-rank.top-1 {
+      color: #FFD700;
+      font-size: 1.5rem;
+    }
+
+    .leaderboard-rank.top-2 {
+      color: #C0C0C0;
+      font-size: 1.4rem;
+    }
+
+    .leaderboard-rank.top-3 {
+      color: #CD7F32;
+      font-size: 1.3rem;
+    }
+
+    .leaderboard-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .leaderboard-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .leaderboard-username {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 0.25rem;
+    }
+
+    .leaderboard-tier {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+
+    .leaderboard-price {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #00d4ff;
+      white-space: nowrap;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .app-container {
+        padding: 1rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .calculator-section,
+      .result-section,
+      .leaderboard-section {
+        padding: 1.5rem;
+      }
+
+      .price-per-post {
+        font-size: 2.5rem;
+      }
+
+      .links-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .action-buttons {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .icon-sm {
+      width: 14px;
+      height: 14px;
+    }
+
+    .icon-lg {
+      width: 24px;
+      height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="grain-overlay"></div>
+    <div class="glow-orb glow-orb-1"></div>
+    <div class="glow-orb glow-orb-2"></div>
+    
+    <div class="content-wrapper">
+      <header class="header">
+        <div class="logo">
+          <svg class="icon-lg logo-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+          </svg>
+          <h1>X POST PRICER</h1>
+        </div>
+        <p class="tagline">Estimate your sponsored post value on X</p>
+      </header>
+
+      <div id="calculatorSection" class="calculator-section fade-in">
+        <div class="input-group">
+          <label for="username">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+            </svg>
+            X Username
+          </label>
+          <input
+            id="username"
+            type="text"
+            placeholder="elonmusk"
+            class="input-field"
+          />
+        </div>
+
+        <div id="metricsLinks" class="metrics-links">
+          <p class="helper-text">
+            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+            Fetch your metrics manually:
+          </p>
+          <div class="links-grid">
+            <a id="tsLink" href="#" target="_blank" rel="noopener noreferrer" class="metric-link">
+              <span class="link-label">TwitterScore</span>
+              <span class="link-arrow">→</span>
+            </a>
+            <a id="sorsaLink" href="#" target="_blank" rel="noopener noreferrer" class="metric-link">
+              <span class="link-label">Sorsa</span>
+              <span class="link-arrow">→</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="twitterScore">TwitterScore</label>
+          <input
+            id="twitterScore"
+            type="number"
+            placeholder="e.g., 540"
+            class="input-field"
+          />
+        </div>
+
+        <div class="input-group">
+          <label for="sorsa">Sorsa Score</label>
+          <input
+            id="sorsa"
+            type="number"
+            placeholder="e.g., 2610"
+            class="input-field"
+          />
+        </div>
+
+        <button id="calculateBtn" class="calculate-btn">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+          </svg>
+          Calculate Price
+        </button>
+
+        <p class="disclaimer">
+          This is an estimation based on public metrics and not financial advice.
+        </p>
+
+        <p class="built-by">
+          Built by <a href="https://x.com/LiuSaxon" target="_blank" rel="noopener noreferrer">@liusaxon</a>
+        </p>
+      </div>
+
+      <div id="resultSection" class="result-section fade-in hidden">
+        <div id="resultCard" class="result-card">
+          <div class="profile-header">
+            <img id="profileAvatar" src="" alt="Profile" class="profile-avatar">
+            <div class="profile-info">
+              <div class="profile-username" id="profileName">Username</div>
+              <div class="profile-handle" id="resultUsername">@username</div>
+            </div>
+          </div>
+
+          <div class="card-header">
+            <div id="tierBadge" class="tier-badge tier-diamond">
+              <span class="tier-icon">💎</span>
+              <span id="tierName">Diamond Tier</span>
+            </div>
+            
+            <div class="price-label">Estimated Price</div>
+            <div class="price-per-post" id="resultPrice">$0-0</div>
+            <div class="price-range-text">per sponsored post</div>
+          </div>
+          
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <span class="metric-label">TwitterScore</span>
+              <span class="metric-value" id="resultTS">0</span>
+            </div>
+            <div class="metric-divider"></div>
+            <div class="metric-item">
+              <span class="metric-label">Sorsa</span>
+              <span class="metric-value" id="resultSorsa">0</span>
+            </div>
+          </div>
+
+          <div class="growth-tip" id="growthTip">
+            💡 Move to the next tier by increasing your influence metrics
+          </div>
+
+          <div class="card-footer">
+            <div class="powered-by">Powered by public influence metrics</div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="copyCardBtn" class="action-btn">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            <span id="copyCardText">Copy Card</span>
+          </button>
+          <button id="shareXBtn" class="action-btn">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+            </svg>
+            Share to X
+          </button>
+          <button id="shareTGBtn" class="action-btn">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            Telegram
+          </button>
+          <button id="copyLinkBtn" class="action-btn">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            Copy Link
+          </button>
+        </div>
+
+        <button id="recalculateBtn" class="recalculate-btn">
+          Calculate Another
+        </button>
+      </div>
+
+      <div id="leaderboardSection" class="leaderboard-section hidden">
+        <div class="leaderboard-header">
+          <h2 class="leaderboard-title">🏆 Global Leaderboard</h2>
+          <p class="leaderboard-subtitle">Top creators ranked by estimated post value</p>
+        </div>
+        <div id="leaderboardList" class="leaderboard-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <script>
+    let result = null;
+    let leaderboard = JSON.parse(localStorage.getItem('xPostLeaderboard') || '[]');
+
+    const usernameInput = document.getElementById('username');
+    const twitterScoreInput = document.getElementById('twitterScore');
+    const sorsaInput = document.getElementById('sorsa');
+    const metricsLinks = document.getElementById('metricsLinks');
+    const tsLink = document.getElementById('tsLink');
+    const sorsaLink = document.getElementById('sorsaLink');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const calculatorSection = document.getElementById('calculatorSection');
+    const resultSection = document.getElementById('resultSection');
+    const leaderboardSection = document.getElementById('leaderboardSection');
+    const profileAvatar = document.getElementById('profileAvatar');
+    const profileName = document.getElementById('profileName');
+    const resultUsername = document.getElementById('resultUsername');
+    const resultPrice = document.getElementById('resultPrice');
+    const resultTS = document.getElementById('resultTS');
+    const resultSorsa = document.getElementById('resultSorsa');
+    const tierBadge = document.getElementById('tierBadge');
+    const tierName = document.getElementById('tierName');
+    const growthTip = document.getElementById('growthTip');
+    const copyCardBtn = document.getElementById('copyCardBtn');
+    const copyCardText = document.getElementById('copyCardText');
+    const shareXBtn = document.getElementById('shareXBtn');
+    const shareTGBtn = document.getElementById('shareTGBtn');
+    const copyLinkBtn = document.getElementById('copyLinkBtn');
+    const recalculateBtn = document.getElementById('recalculateBtn');
+    const resultCard = document.getElementById('resultCard');
+    const leaderboardList = document.getElementById('leaderboardList');
+
+    // Tier configuration
+    const tiers = [
+      { name: 'Diamond', icon: '💎', minPrice: 4000, class: 'tier-diamond', nextTier: null },
+      { name: 'Obsidian', icon: '⚫', minPrice: 1500, class: 'tier-obsidian', nextTier: 'Diamond ($4,000)' },
+      { name: 'Pearl', icon: '🤍', minPrice: 700, class: 'tier-pearl', nextTier: 'Obsidian ($1,500)' },
+      { name: 'Amethyst', icon: '🟣', minPrice: 300, class: 'tier-amethyst', nextTier: 'Pearl ($700)' },
+      { name: 'Emerald', icon: '🟢', minPrice: 0, class: 'tier-emerald', nextTier: 'Amethyst ($300)' }
+    ];
+
+    function getTier(price) {
+      return tiers.find(tier => price >= tier.minPrice) || tiers[tiers.length - 1];
+    }
+
+    function updateGrowthTip(tier) {
+      if (tier.nextTier) {
+        growthTip.innerHTML = `💡 Reach ${tier.nextTier} by increasing your influence metrics`;
+      } else {
+        growthTip.innerHTML = `🏆 You've reached the highest tier! Keep building your influence.`;
+      }
+    }
+
+    function saveToLeaderboard(entry) {
+      leaderboard = leaderboard.filter(item => item.username !== entry.username);
+      leaderboard.push(entry);
+      leaderboard.sort((a, b) => b.maxPrice - a.maxPrice);
+      leaderboard = leaderboard.slice(0, 100);
+      localStorage.setItem('xPostLeaderboard', JSON.stringify(leaderboard));
+    }
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = leaderboard.map((entry, index) => {
+        const tier = getTier(entry.maxPrice);
+        const isCurrentUser = result && entry.username === result.username;
+        const rankClass = index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : '';
+        
+        return `
+          <div class="leaderboard-item ${isCurrentUser ? 'current-user' : ''}">
+            <div class="leaderboard-rank ${rankClass}">#${index + 1}</div>
+            <img src="https://unavatar.io/twitter/${entry.username}" alt="${entry.username}" class="leaderboard-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22%3E%3Crect fill=%22%2300d4ff%22 width=%2240%22 height=%2240%22/%3E%3Ctext x=%2220%22 y=%2226%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22monospace%22%3E${entry.username[0].toUpperCase()}%3C/text%3E%3C/svg%3E'">
+            <div class="leaderboard-info">
+              <div class="leaderboard-username">@${entry.username}</div>
+              <div class="leaderboard-tier ${tier.class}">${tier.icon} ${tier.name}</div>
+            </div>
+            <div class="leaderboard-price">$${entry.minPrice.toLocaleString()}-$${entry.maxPrice.toLocaleString()}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    usernameInput.addEventListener('input', (e) => {
+      const username = e.target.value.replace('@', '');
+      if (username) {
+        metricsLinks.classList.add('visible');
+        tsLink.href = `https://twitterscore.io/twitter/${username}`;
+        sorsaLink.href = `https://app.sorsa.io/profile/${username}`;
+      } else {
+        metricsLinks.classList.remove('visible');
+      }
+    });
+
+    calculateBtn.addEventListener('click', () => {
+      const username = usernameInput.value.replace('@', '');
+      const ts = parseFloat(twitterScoreInput.value);
+      const sorsaVal = parseFloat(sorsaInput.value);
+
+      if (!username || isNaN(ts) || isNaN(sorsaVal) || ts <= 0 || sorsaVal <= 0) {
+        alert('Please enter valid data for all fields');
+        return;
+      }
+
+      const REF_PRICE = 8000;
+      const REF_TS = 540;
+      const REF_SORSA = 2610;
+
+      const priceFromTS = REF_PRICE * (ts / REF_TS);
+      const priceFromSorsa = REF_PRICE * (sorsaVal / REF_SORSA);
+      const finalPrice = Math.round((priceFromTS + priceFromSorsa) / 2);
+      
+      const minPrice = Math.round(finalPrice * 0.7);
+      const maxPrice = finalPrice;
+
+      result = {
+        username,
+        twitterScore: ts,
+        sorsa: sorsaVal,
+        price: finalPrice,
+        minPrice: minPrice,
+        maxPrice: maxPrice
+      };
+
+      const tier = getTier(maxPrice);
+
+      profileAvatar.src = `https://unavatar.io/twitter/${username}`;
+      profileAvatar.onerror = function() {
+        this.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect fill='%2300d4ff' width='64' height='64'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='white' font-family='monospace'%3E${username[0].toUpperCase()}%3C/text%3E%3C/svg%3E`;
+      };
+
+      profileName.textContent = username;
+      resultUsername.textContent = `@${username}`;
+      resultPrice.textContent = `$${minPrice.toLocaleString()}-$${maxPrice.toLocaleString()}`;
+      resultTS.textContent = result.twitterScore.toLocaleString();
+      resultSorsa.textContent = result.sorsa.toLocaleString();
+
+      tierBadge.className = `tier-badge ${tier.class}`;
+      tierBadge.innerHTML = `<span class="tier-icon">${tier.icon}</span><span>${tier.name} Tier</span>`;
+
+      updateGrowthTip(tier);
+      saveToLeaderboard(result);
+
+      calculatorSection.classList.add('hidden');
+      resultSection.classList.remove('hidden');
+      leaderboardSection.classList.remove('hidden');
+      
+      renderLeaderboard();
+
+      setTimeout(() => {
+        resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    });
+
+    // Copy card to clipboard
+    copyCardBtn.addEventListener('click', async () => {
+      try {
+        const canvas = await html2canvas(resultCard, {
+          backgroundColor: '#0a0a0f',
+          scale: 2
+        });
+        
+        // Convert canvas to blob
+        canvas.toBlob(async (blob) => {
+          try {
+            // Copy to clipboard using Clipboard API
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                'image/png': blob
+              })
+            ]);
+            
+            // Show success feedback
+            const originalHTML = copyCardBtn.innerHTML;
+            copyCardBtn.innerHTML = `
+              <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Copied!</span>
+            `;
+            
+            setTimeout(() => {
+              copyCardBtn.innerHTML = originalHTML;
+            }, 2000);
+          } catch (err) {
+            // Fallback: download if clipboard API fails
+            console.log('Clipboard API failed, downloading instead:', err);
+            const link = document.createElement('a');
+            link.download = `x-post-price-${result.username}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            
+            // Show download feedback
+            const originalHTML = copyCardBtn.innerHTML;
+            copyCardBtn.innerHTML = `
+              <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              <span>Downloaded</span>
+            `;
+            
+            setTimeout(() => {
+              copyCardBtn.innerHTML = originalHTML;
+            }, 2000);
+          }
+        }, 'image/png');
+      } catch (error) {
+        console.error('Card copy failed:', error);
+        alert('Unable to copy card. Please try using a modern browser (Chrome, Firefox, Safari).');
+      }
+    });
+
+    shareXBtn.addEventListener('click', () => {
+      const tier = getTier(result.maxPrice);
+      const text = `My Tier: ${tier.name}\n\nMy estimated X post price: $${result.minPrice.toLocaleString()}-$${result.maxPrice.toLocaleString()}\n\nCalculate yours X:`;
+      const url = window.location.href;
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+    });
+
+    shareTGBtn.addEventListener('click', () => {
+      const tier = getTier(result.maxPrice);
+      const text = `My Tier: ${tier.name}\n\nMy estimated X post price: $${result.minPrice.toLocaleString()}-$${result.maxPrice.toLocaleString()}\n\nCalculate yours!`;
+      const url = window.location.href;
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+    });
+
+    copyLinkBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(window.location.href);
+      const originalText = copyLinkBtn.innerHTML;
+      copyLinkBtn.innerHTML = `
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Copied!
+      `;
+      setTimeout(() => {
+        copyLinkBtn.innerHTML = originalText;
+      }, 2000);
+    });
+
+    recalculateBtn.addEventListener('click', () => {
+      result = null;
+      usernameInput.value = '';
+      twitterScoreInput.value = '';
+      sorsaInput.value = '';
+      metricsLinks.classList.remove('visible');
+      
+      resultSection.classList.add('hidden');
+      leaderboardSection.classList.add('hidden');
+      calculatorSection.classList.remove('hidden');
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>
